@@ -4,7 +4,7 @@ from celerite import terms
 import emcee
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-
+from functools import partial
 
 #       _ _   _           _                                        _                                 _                       
 #      (_) | | |         | |                                      | |                               (_)                      
@@ -178,7 +178,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     y_error = mag_error[x_sort]
 
     # Example usage with curve fitting
-    Q1,Q5,Q25,Q99 = np.percentile(y, [1,5,50,99])
+    Q1,Q5,Q25,Q99 = np.percentile(y_data, [1,5,50,99])
     base_line = Q5
     wave_depth = abs(Q99-Q1)
     transit_time = 0.3
@@ -195,9 +195,14 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
         rise_slope_func=linear_rise_slope
     else:
         rise_slope_func=linear_rise_slope
+
+    # Create a partial function with fixed arguments (rise_slope_func)
+    trapezoid_waveform_partial = partial(trapezoid_waveform, rise_slope_func=rise_slope_func)
+
+
     # Perform curve fitting using scipy.optimize.curve_fit with weights
-    p0 = [base_line, wave_depth, transit_time, input_time, output_time, rise_slope_func]  # Initial guess for parameters
-    popt, pcov = curve_fit(trapezoid_waveform, x_data, y_data, p0=p0, sigma=y_error, absolute_sigma=True, maxfev = 9999999)
+    p0 = [base_line, wave_depth, transit_time, input_time, output_time]  # Initial guess for parameters
+    popt, pcov = curve_fit(trapezoid_waveform_partial, x_data, y_data, p0=p0, sigma=y_error, absolute_sigma=True, maxfev = 9999999)
 
     # Extract the fitted parameters
     fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = popt
@@ -303,56 +308,55 @@ def calculate_boxiness(phase, mag, mag_err):
 
 
 def sine_fit(self, mag, time, period, IO = False, output_fp = '.'):
-    try:
-        def sinus(x, A, B, C): # this is your 'straight line' y=f(x)
-            return (A * np.sin((2.*np.pi*x)+C))+B
+    def sinus(x, A, B, C): # this is your 'straight line' y=f(x)
+        return (A * np.sin((2.*np.pi*x)+C))+B
 
-        y = np.array(mag)        # to fix order when called, (better to always to mag, time) CONSISTENCY!!!!!!!!!)
-        x = phaser(time, period)
-        popt, pcov = curve_fit(sinus, x, y, bounds=((true_amplitude*0.3, mag_avg*0.3, -2), (true_amplitude*3.0, mag_avg*3, 2)))#, method = 'lm') # your data x, y to fit
+    y = np.array(mag)        # to fix order when called, (better to always to mag, time) CONSISTENCY!!!!!!!!!)
+    x = phaser(time, period)
+    popt, pcov = curve_fit(sinus, x, y, bounds=((true_amplitude*0.3, mag_avg*0.3, -2), (true_amplitude*3.0, mag_avg*3, 2)))#, method = 'lm') # your data x, y to fit
+    
+    y_fit = sinus(x, popt[0], popt[1], popt[2])
+    #compare
+    y_diff = y - y_fit
+    #residual sum of squares
+    ss_res = np.sum((y_diff) ** 2)
+    #total sum of squares
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
+    # r-squared
+    r2 = 1 - (ss_res / ss_tot)        #coefficient of determination
+    
+    amplitude = popt[0]
+    offset = popt[1]
+    phase_shift = popt[2]
+    if IO:
+
+        plt.clf()
         
-        y_fit = sinus(x, popt[0], popt[1], popt[2])
-        #compare
-        y_diff = y - y_fit
-        #residual sum of squares
-        ss_res = np.sum((y_diff) ** 2)
-        #total sum of squares
-        ss_tot = np.sum((y - np.mean(y)) ** 2)
-        # r-squared
-        r2 = 1 - (ss_res / ss_tot)        #coefficient of determination
+        text_font = {'family': 'serif', 'color':  'darkred', 'weight': 'normal', 'size': 8, }
+        text_pos = 0.001
+        sort = np.argsort(x)
+        m = np.array(y)[sort]            
         
-        amplitude = popt[0]
-        offset = popt[1]
-        phase_shift = popt[2]
-        if IO:
+        plt.title('Amplitude = '+str(round(popt[0], 3))+'  Offset = '+str(round(popt[1], 3))+'  Phase Shift = '+str(round(popt[2], 3)))
+                        
+        x_line = np.arange(0, 1.01, 0.01)
+        plt.plot(x, y, 'rx', markersize=4, label = 'Before')
+        plt.plot(x+1., y, 'rx', markersize=4)
 
-            plt.clf()
-            
-            text_font = {'family': 'serif', 'color':  'darkred', 'weight': 'normal', 'size': 8, }
-            text_pos = 0.001
-            sort = np.argsort(x)
-            m = np.array(y)[sort]            
-            
-            plt.title('Amplitude = '+str(round(popt[0], 3))+'  Offset = '+str(round(popt[1], 3))+'  Phase Shift = '+str(round(popt[2], 3)))
-                            
-            x_line = np.arange(0, 1.01, 0.01)
-            plt.plot(x, y, 'rx', markersize=4, label = 'Before')
-            plt.plot(x+1., y, 'rx', markersize=4)
+        plt.plot(x_line, sinus(x_line, popt[0], popt[1], popt[2]), 'k', label="$R^2\, =\, $"+str(round(r2,3)))
+        plt.plot(x_line+1., sinus(x_line, popt[0], popt[1], popt[2]), 'k')
 
-            plt.plot(x_line, sinus(x_line, popt[0], popt[1], popt[2]), 'k', label="$R^2\, =\, $"+str(round(r2,3)))
-            plt.plot(x_line+1., sinus(x_line, popt[0], popt[1], popt[2]), 'k')
+        plt.plot(x, y_diff+np.median(y), 'b+', label = 'After')
+        plt.plot(x+1., y_diff+np.median(y), 'b+')
+        
+        plt.xlabel('Phase')
+        plt.ylabel('Magnitude [mag]')
+        plt.grid()
+        plt.legend()
+        plt.gca().invert_yaxis()
+        plt.savefig(output_fd + '_sine.png', format = 'png', dpi = image_dpi)
 
-            plt.plot(x, y_diff+np.median(y), 'b+', label = 'After')
-            plt.plot(x+1., y_diff+np.median(y), 'b+')
-            
-            plt.xlabel('Phase')
-            plt.ylabel('Magnitude [mag]')
-            plt.grid()
-            plt.legend()
-            plt.gca().invert_yaxis()
-            plt.savefig(output_fd + '_sine.png', format = 'png', dpi = image_dpi)
-
-        return r2, amplitude, offset, phase_shift
+    return r2, amplitude, offset, phase_shift
 
      
     
@@ -360,6 +364,7 @@ def sine_fit(self, mag, time, period, IO = False, output_fp = '.'):
     
 
 def spline_fit(mag, magerr, time, IO = False, output_fp = '.'):
+
     def sl(x, A, B): # this is your 'straight line' y=f(x)
         return A*x + B
             
@@ -402,40 +407,40 @@ def spline_fit(mag, magerr, time, IO = False, output_fp = '.'):
     if abs(max(IQRs)-min(IQRs)) > 0.1 * RIQR:
         trans_flag = 1 
 
-    try:
-        popt, pcov = curve_fit(sl, rx, rq50) # your data x, y to fit
-        grad = popt[0]
-        intercept = popt[1]
-        #generate fit
 
-        y_fit = sl(x, popt[0], popt[1])
-        #compare
-        y_diff = y - y_fit
-        #residual sum of squares
-        ss_res = np.sum((y_diff) ** 2)
-        #total sum of squares
-        ss_tot = np.sum((y - np.mean(y)) ** 2)
-        # r-squared
-        r2 = 1 - (ss_res / ss_tot)
-    
-        if IO:
+    popt, pcov = curve_fit(sl, rx, rq50) # your data x, y to fit
+    grad = popt[0]
+    intercept = popt[1]
+    #generate fit
 
-            print('\t~~~~~~~SPLINE FIT~~~~~~~~~')
-            print("\tCoefficient of determination = ", r2)
-            print('\t~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    y_fit = sl(x, popt[0], popt[1])
+    #compare
+    y_diff = y - y_fit
+    #residual sum of squares
+    ss_res = np.sum((y_diff) ** 2)
+    #total sum of squares
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
+    # r-squared
+    r2 = 1 - (ss_res / ss_tot)
 
-            plt.clf()
-            x_line = np.arange(min(x), max(x))
-            plt.plot(x_line, sl(x_line, grad, intercept), 'k', label="$R^2\, =\, $"+str(r2))
-            plt.plot(x, y, 'rx', label = 'Before')
-            plt.errorbar(rx, rq50, yerr = (rq75-rq50, rq50-rq25), xerr = rdelta, ecolor = 'g', label = 'Running Median')            
-            plt.plot(x, y_diff+np.median(y), 'b+', label = 'After')
-            plt.xlabel('Time [JD]')
-            plt.ylabel('Magnitude [mag]')
-            plt.grid()
-            plt.legend()
-            plt.gca().invert_yaxis()
-            plt.savefig(output_fp + '_spline.png', format = 'png', dpi = image_dpi) 
-            plt.clf()
+    if IO:
+
+        print('\t~~~~~~~SPLINE FIT~~~~~~~~~')
+        print("\tCoefficient of determination = ", r2)
+        print('\t~~~~~~~~~~~~~~~~~~~~~~~~~~')
+
+        plt.clf()
+        x_line = np.arange(min(x), max(x))
+        plt.plot(x_line, sl(x_line, grad, intercept), 'k', label="$R^2\, =\, $"+str(r2))
+        plt.plot(x, y, 'rx', label = 'Before')
+        plt.errorbar(rx, rq50, yerr = (rq75-rq50, rq50-rq25), xerr = rdelta, ecolor = 'g', label = 'Running Median')            
+        plt.plot(x, y_diff+np.median(y), 'b+', label = 'After')
+        plt.xlabel('Time [JD]')
+        plt.ylabel('Magnitude [mag]')
+        plt.grid()
+        plt.legend()
+        plt.gca().invert_yaxis()
+        plt.savefig(output_fp + '_spline.png', format = 'png', dpi = image_dpi) 
+        plt.clf()
 
     return r2, grad, intercept
