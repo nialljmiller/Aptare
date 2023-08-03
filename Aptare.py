@@ -186,12 +186,15 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     output_time = 0.1
 
 
-    rise_slope_func=linear_rise_slope
-    if rise_slope == 'Tanh' or 'Than':
-        rise_slope = tanh_rise_slope
-    if rise_flope == 'Sigmoid':
-        rise_slope = sigmoid_rise_slope
 
+    if rise_slope == 'Tanh' or 'Than':
+        rise_slope_func = tanh_rise_slope
+    if rise_slope == 'Sigmoid':
+        rise_slope_func = sigmoid_rise_slope
+    if rise_slope == 'Linear':
+        rise_slope_func=linear_rise_slope
+    else:
+        rise_slope_func=linear_rise_slope
     # Perform curve fitting using scipy.optimize.curve_fit with weights
     p0 = [base_line, wave_depth, transit_time, input_time, output_time, rise_slope_func]  # Initial guess for parameters
     popt, pcov = curve_fit(trapezoid_waveform, x_data, y_data, p0=p0, sigma=y_error, absolute_sigma=True, maxfev = 9999999)
