@@ -180,8 +180,8 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, ri
 
 
 
-def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False):
-
+def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False, initial_guess = [0.3,0.1,0.1]):
+    #update you cunt
     x_sort = np.argsort(phase)
     x_data = phase[x_sort]
     y_data = mag[x_sort]
@@ -197,9 +197,9 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     Q1,Q5,Q25,Q99 = np.percentile(y_data, [1,5,50,99])
     base_line = Q5
     wave_depth = abs(Q99-Q1)
-    transit_time = 0.3
-    input_time = 0.1
-    output_time = 0.1
+    transit_time = initial_guess[0]
+    input_time = initial_guess[1]
+    output_time = 0initial_guess[2]
 
 
 
