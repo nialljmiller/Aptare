@@ -93,7 +93,7 @@ Our first mate, Savitzky-Golay, be a powerful smoothing filter that helps us sai
 To use Savitzky-Golay, import the `savitzky_golay` function and pass it yer X and Y data along with the window size and polynomial order:
 
 ```python
-from your_code_file import savitzky_golay
+from aptare import savitzky_golay
 
 # Sample XY data (replace with yer own data)
 x_data = [0, 1, 2, 3, 4, 5]
@@ -116,7 +116,7 @@ Sometimes, the seas be too treacherous, and the Savitzky-Golay may falter. In su
 KNN Smooth be a modified version of the original KNN algorithm. It be like sailors sharing their tales with each other and smoothing out the rough edges. Ye can use the `knn_smooth` function to apply this magic:
 
 ```python
-from your_code_file import knn_smooth
+from aptare import knn_smooth
 
 # Sample XY data (replace with yer own data)
 x_data = [0, 1, 2, 3, 4, 5]
@@ -138,7 +138,7 @@ Now that ye be familiar with the powers of Savitzky-Golay and KNN Smooth, we be 
 Use the `delta_detector` function to detect the significant changes in yer data:
 
 ```python
-from your_code_file import delta_detector
+from aptare import delta_detector
 
 # Sample XY data (replace with yer own data)
 x_data = [0, 1, 2, 3, 4, 5]
