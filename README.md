@@ -121,34 +121,13 @@ def savgol_delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1):
     """
 ```
 
-### Usage
-
-1. Import the required libraries:
-
-```python
-import numpy as np
-import matplotlib.pyplot as plt
-```
-
-2. Copy the `savgol_delta_detector` function into your Python script or notebook.
-
-3. Prepare your XY data (X-axis and Y-axis values) in numpy arrays.
-
-4. Sort the data in ascending order of X-axis values (required for the function).
-
-5. Normalize the X-axis and Y-axis values before passing them to the function.
-
-6. Call the `savgol_delta_detector` function, passing the X-axis and Y-axis data, along with optional parameters (window_size, poly_order, threshold).
-
-7. The function will return the smoothed Y-axis data and the X-axis values of significant changes in the data.
-
-8. You can then visualize the results using `matplotlib` as needed.
 
 ### Example
 
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
+from aptare import savgol_delta_detector
 
 # Sample XY data (replace with your actual data)
 x_data = np.linspace(0, 10, 100)
@@ -167,20 +146,6 @@ plt.ylabel('Y')
 plt.title('Original Data and Smoothed Data with Significant Changes')
 plt.show()
 ```
-
-Note: Don't forget to adjust the sample XY data in the example with your actual data.
-
-### License
-
-This function is provided under the MIT License. Feel free to use, modify, and distribute it according to the terms of the license.
-
-For more information on Savitzky-Golay filtering and the use of the function, please refer to the [documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html) of `scipy.signal.savgol_filter`.
-
-
-
-
-
-
 
 
 ## Contributing
