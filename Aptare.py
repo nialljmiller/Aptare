@@ -190,6 +190,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     if norm_x:
         x_data = min_max_norm(x_data)
     if norm_y:        
+        y_error = y_error/y_data
         y_data = min_max_norm(y_data)
 
 
