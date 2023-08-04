@@ -15,8 +15,18 @@ from functools import partial
 #  __/ |                                                                             __/ |                    __/ |          
 # |___/                                                                             |___/                    |___/           
 
+def min_max_norm(arr):
+    min_val = np.min(arr)
+    max_val = np.max(arr)
+    normalized_arr = (arr - min_val) / (max_val - min_val)
+    return normalized_arr
+	
 
-
+def z_norm(arr):
+    mean_val = np.mean(arr)
+    std_val = np.std(arr)
+    normalized_arr = (arr - mean_val) / std_val
+    return normalized_arr
 
 def phaser(self, time, period):
     # this is to mitigate against div 0
@@ -170,12 +180,17 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, ri
 
 
 
-def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None):
+def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm = False):
 
     x_sort = np.argsort(phase)
     x_data = phase[x_sort]
     y_data = mag[x_sort]
     y_error = mag_error[x_sort]
+    
+    if norm
+        x_data = min_max_norm(x_data)
+        y_data = min_max_norm(y_data)
+
 
     # Example usage with curve fitting
     Q1,Q5,Q25,Q99 = np.percentile(y_data, [1,5,50,99])
@@ -307,7 +322,7 @@ def calculate_boxiness(phase, mag, mag_err):
     
 
 
-def sine_fit(self, mag, time, period, IO = False, output_fp = '.'):
+def fit_sine_model(self, mag, time, period, IO = False, output_fp = '.'):
     def sinus(x, A, B, C): # this is your 'straight line' y=f(x)
         return (A * np.sin((2.*np.pi*x)+C))+B
 
@@ -363,7 +378,7 @@ def sine_fit(self, mag, time, period, IO = False, output_fp = '.'):
     
     
 
-def spline_fit(mag, magerr, time, IO = False, output_fp = '.'):
+def fit_spline_model(mag, magerr, time, IO = False, output_fp = '.'):
 
     def sl(x, A, B): # this is your 'straight line' y=f(x)
         return A*x + B
