@@ -27,26 +27,50 @@ To get started with Aptare, follow these steps:
 
 2. **Usage:** Import Aptare in your Python script or notebook and use the appropriate functions to fit your light curves:
 
-   ```python
-   from aptare import spline_fit, sinusoid_fit, trapezium_fit, gp_fit
+## Fit Trap Model - Giddy up your Light Curves!
 
-   # Example: Fit a light curve using a spline
-   x_data = [...]  # Your x-axis data (e.g., time)
-   y_data = [...]  # Your y-axis data (e.g., intensity)
-   spline_fit_result = spline_fit(x_data, y_data)
+Yeehaw! The `fit_trap_model` function in Aptare is your trusty steed for wranglin' them trapezoid waveforms! Saddle up, and let's see how this function can fit your data.
 
-   # Example: Fit a periodic light curve using a sinusoid
-   period = 2.0  # Period of the sinusoidal pattern
-   sinusoid_fit_result = sinusoid_fit(x_data, y_data, period)
+### Parameters 🎯
 
-   # Example: Fit a trapezium-shaped light curve with a specific rise shape
-   rise_shape = 'Tanh'  # Can be 'Tanh', 'Sigmoid', or 'Linear'
-   trapezium_fit_result = trapezium_fit(x_data, y_data, rise_shape)
+- `phase` 🔍: NumPy array or list - The phase values (x-axis) corresponding to the magnitude data.
+- `mag` 🌟: NumPy array or list - The magnitude (y-axis) data of your light curve.
+- `mag_error` 🔧: NumPy array or list - The magnitude error (uncertainty) for each data point in the light curve.
+- `rise_slope` 📈 (optional) - The type of rise slope function to use for the trapezoid fit. Available options are 'Linear', 'Tanh', 'Sigmoid', and 'Than'. Default is 'Linear'.
+- `output_fp` 🖼️ (optional) - The file path to save the output plot showing the fitted waveform and residuals. If not provided, the plot will not be saved.
+- `norm_x` 📐 (optional) - Set to `True` to normalize the phase values to the range [0, 1]. Default is `False`.
+- `norm_y` 📏 (optional) - Set to `True` to normalize the magnitude values to the range [0, 1]. Default is `False`.
+- `initial_guess` 🎯 (optional) - The initial guess for the trapezoid model parameters [transit_time, input_time, output_time]. Default is [0.3, 0.1, 0.1].
 
-   # Example: Fit a light curve using Gaussian Processes with squared exponential kernel
-   gp_fit_result = gp_fit(x_data, y_data)
-   ```
+### Usage 🤠
 
+```python
+from aptare import fit_trap_model
+
+# Example data
+phase = [0.1, 0.3, 0.5, 0.7, 0.9]
+mag = [10.0, 9.8, 11.2, 9.5, 10.5]
+mag_error = [0.1, 0.2, 0.15, 0.12, 0.18]
+
+# Fit the trapezoid waveform to the data
+rmse, weighted_rmse, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = fit_trap_model(phase, mag, mag_error, rise_slope='Tanh', output_fp='fit_result.png', norm_x=True, norm_y=True, initial_guess=[0.2, 0.05, 0.05])
+
+print("Root Mean Squared Error (RMSE):", rmse)
+print("Weighted RMSE:", weighted_rmse)
+print("Fitted Baseline:", fitted_base)
+print("Fitted Depth:", fitted_depth)
+print("Fitted Transit Time:", fitted_transit_time)
+print("Fitted Input Time (Rise Time):", fitted_input_time)
+print("Fitted Output Time (Fall Time):", fitted_output_time)
+```
+
+### Output 🌄
+
+Y'all can save an output plot by providing the `output_fp` parameter, and it'll show the original data points, the fitted trapezoid waveform, and the residuals after fitting. Giddy up and take a look at the fit_result.png to see how well the trapezoid corralled them data points!
+
+### Let's Ride!
+
+So there you have it, partner! Saddle up and use the `fit_trap_model` function to lasso them trapezoid fits! 🐎 Remember to pass the right data and watch out for them optional parameters to customize your fit. Yeehaw! 🌵🌟🔧📈🎯📐📏🖼️🌄
 3. **Documentation:** For more details on the available functions and their usage, please refer to the documentation [link to documentation].
 
 ## Contributing
