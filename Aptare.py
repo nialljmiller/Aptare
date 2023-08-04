@@ -252,7 +252,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
 
 
 
-    if do_MCMC:
+    if do_MCMC: 
         
         # Perform MCMC fitting
         nwalkers = 100
@@ -262,19 +262,15 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
         # Initialize the walkers around the initial guess
         initial_guess = popt
         pos = initial_guess + 1e-4 * np.random.randn(nwalkers, ndim)
-
         # Set up the emcee sampler
         sampler = emcee.EnsembleSampler(nwalkers, ndim, trap_log_probability, args=(x_data, y_data, y_error))
-
         # Run the MCMC sampler
         sampler.run_mcmc(pos, nsteps, progress=True)
-
-        # Get the samples from the sampler
-        samples = sampler.get_chain()
-
         # Extract the fitted parameters from the samples
         burn_in = 1000  # You may need to adjust this value depending on the convergence of the chains
-        fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = np.median(samples[burn_in:, :], axis=0)
+        samples = sampler.get_chain(discard=burn_in, flat=True)
+        # Extract the fitted parameters from the samples
+        fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = np.median(samples, axis=0)
 
 
 
