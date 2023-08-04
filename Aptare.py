@@ -180,15 +180,16 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, ri
 
 
 
-def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm = False):
+def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False):
 
     x_sort = np.argsort(phase)
     x_data = phase[x_sort]
     y_data = mag[x_sort]
     y_error = mag_error[x_sort]
     
-    if norm
+    if norm_x:
         x_data = min_max_norm(x_data)
+    if norm_y:        
         y_data = min_max_norm(y_data)
 
 
