@@ -41,8 +41,6 @@ def phaser(self, time, period):
            phase[i] = phase[i]+1.
     return phase
 
-
-
 def calculate_rmse(y_observed, y_predicted):
     """
     Calculates the root mean square error (RMSE) between observed and predicted values.
@@ -90,6 +88,34 @@ def log_likelihood(params, x, y, yerr):
 
 
 
+    
+    
+# Define the log likelihood function for the MCMC fitting
+def trap_log_likelihood(params, x, y, y_err):
+    model = trapezoid_waveform_partial(x, *params)
+    return -0.5 * np.sum(((y - model) / y_err) ** 2)
+
+# Define priors for the parameters. This is where you can set your initial guesses and ranges.
+def trap_log_prior(params):
+    base_line, wave_depth, transit_time, input_time, output_time = params
+
+    # Define uniform priors for each parameter
+    if (0 < wave_depth < 1000) and (0 < transit_time < 1000) and (0 < input_time < 1000) and (0 < output_time < 1000):
+        return 0.0
+
+    return -np.inf
+
+# Combine the log likelihood and log prior to get the log posterior
+def trap_log_probability(params, x, y, y_err):
+    lp = trap_log_prior(params)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + trap_log_likelihood(params, x, y, y_err)
+
+    
+    
+    
+    
 
 def linear_rise_slope(t, depth, transit_time, input_time):
     """
@@ -180,7 +206,7 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, ri
 
 
 
-def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False, initial_guess = [0.3,0.1,0.1]):
+def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False, initial_guess = [0.3,0.1,0.1], do_MCMC = False):
     #update you cunt
     x_sort = np.argsort(phase)
     x_data = phase[x_sort]
@@ -224,12 +250,48 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     # Extract the fitted parameters
     fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = popt
 
+
+
+    if do_MCMC:
+        
+        # Perform MCMC fitting
+        nwalkers = 100
+        ndim = 5
+        nsteps = 5000
+
+        # Initialize the walkers around the initial guess
+        initial_guess = popt
+        pos = initial_guess + 1e-4 * np.random.randn(nwalkers, ndim)
+
+        # Set up the emcee sampler
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, trap_log_probability, args=(x_data, y_data, y_error))
+
+        # Run the MCMC sampler
+        sampler.run_mcmc(pos, nsteps, progress=True)
+
+        # Get the samples from the sampler
+        samples = sampler.get_chain()
+
+        # Extract the fitted parameters from the samples
+        burn_in = 1000  # You may need to adjust this value depending on the convergence of the chains
+        fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = np.median(samples[burn_in:, :], axis=0)
+
+
+
+
     # Generate the fitted waveform using the fitted parameters
     fitted_waveform = trapezoid_waveform(x_data, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
 
     # Generate the fitted waveform using the fitted parameters
     plt_x_fitted = np.linspace(0, 1, 1000)  # Higher sampling rate for visualization
     plt_fitted_waveform = trapezoid_waveform(plt_x_fitted, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
+
+
+
+
+
+
+
 
 
 
