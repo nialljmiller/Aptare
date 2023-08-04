@@ -199,7 +199,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     wave_depth = abs(Q99-Q1)
     transit_time = initial_guess[0]
     input_time = initial_guess[1]
-    output_time = 0initial_guess[2]
+    output_time = initial_guess[2]
 
 
 
