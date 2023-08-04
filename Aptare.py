@@ -187,7 +187,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     order_range = range(order+1)
     coeffs = [(-1)**k * np.math.factorial(order) // (np.math.factorial(k) * np.math.factorial(order - k)) for k in order_range]
     kernel = np.outer(coeffs, np.ones(window_size))
-    smoothed = np.convolve(y, kernel[deriv], mode='valid')
+    smoothed = np.convolve(y, kernel[deriv], mode='same')
     smoothed /= rate**deriv
     return smoothed
 
@@ -222,9 +222,9 @@ def savgol_delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1):
 
     """
 
-    x_sort = np.argsort(x)
-    x = x[x_sort]
-    y = y[x_sort]
+    #x_sort = np.argsort(x)
+    #x = x[x_sort]
+    #y = y[x_sort]
 
     x_data = min_max_norm(x)
     y_data = min_max_norm(y)
