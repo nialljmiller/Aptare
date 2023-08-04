@@ -73,6 +73,116 @@ Y'all can save an output plot by providing the `output_fp` parameter, and it'll 
 So there you have it, partner! Saddle up and use the `fit_trap_model` function to lasso them trapezoid fits! 🐎 Remember to pass the right data and watch out for them optional parameters to customize your fit. Yeehaw! 🌵🌟🔧📈🎯📐📏🖼️🌄
 3. **Documentation:** For more details on the available functions and their usage, please refer to the documentation [link to documentation].
 
+
+Sure! Here's a small GitHub-style README with instructions on how to use the `savgol_delta_detector` function:
+
+## SavGol Delta Detector
+
+The `savgol_delta_detector` is a Python function designed to detect significant changes in a dataset using the Savitzky-Golay filter. It provides a way to identify regions of interest where the data shows significant deviations from its smoothed trend.
+
+### Dependencies
+
+This function requires the following Python libraries:
+
+- `numpy`: For numerical computations and array manipulations.
+- `matplotlib`: For data visualization.
+
+### Function Signature
+
+```python
+def savgol_delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1):
+    """
+    Detect significant changes in a dataset using the Savitzky-Golay filter.
+
+    Parameters:
+        x (array-like): Input data's X-axis values.
+        y (array-like): Input data's Y-axis values.
+        window_size (int): The size of the window used for the Savitzky-Golay filter. Default is 11.
+        poly_order (int): The polynomial order used for the Savitzky-Golay filter. Default is 3.
+        threshold (float): Threshold to identify significant changes in the smoothed data. Default is 0.1.
+
+    Returns:
+        smoothed_data (numpy.ndarray): The smoothed Y-axis data.
+        significant_changes (numpy.ndarray): X-axis values of significant changes in the data.
+
+    Note:
+        - The input data (x and y) should be sorted in ascending order of X-axis values.
+        - The X-axis values should be normalized before passing to this function.
+        - The Y-axis values should also be normalized before passing to this function.
+
+    Example:
+        # Sample XY data (replace with your actual data)
+        x_data = np.linspace(0, 10, 100)
+        y_data = np.sin(x_data) + np.random.normal(0, 0.1, size=len(x_data))
+
+        # Detect significant changes
+        smoothed_data, significant_changes = savgol_delta_detector(x_data, y_data)
+
+    """
+```
+
+### Usage
+
+1. Import the required libraries:
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+```
+
+2. Copy the `savgol_delta_detector` function into your Python script or notebook.
+
+3. Prepare your XY data (X-axis and Y-axis values) in numpy arrays.
+
+4. Sort the data in ascending order of X-axis values (required for the function).
+
+5. Normalize the X-axis and Y-axis values before passing them to the function.
+
+6. Call the `savgol_delta_detector` function, passing the X-axis and Y-axis data, along with optional parameters (window_size, poly_order, threshold).
+
+7. The function will return the smoothed Y-axis data and the X-axis values of significant changes in the data.
+
+8. You can then visualize the results using `matplotlib` as needed.
+
+### Example
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Sample XY data (replace with your actual data)
+x_data = np.linspace(0, 10, 100)
+y_data = np.sin(x_data) + np.random.normal(0, 0.1, size=len(x_data))
+
+# Detect significant changes
+smoothed_data, significant_changes = savgol_delta_detector(x_data, y_data)
+
+# Plot the original data and the smoothed data with significant changes
+plt.plot(x_data, y_data, label='Original Data', alpha=0.5)
+plt.plot(x_data, smoothed_data, label='Smoothed Data')
+plt.scatter(significant_changes, [y_data[i] for i in significant_changes], color='red', label='Significant Changes')
+plt.legend()
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title('Original Data and Smoothed Data with Significant Changes')
+plt.show()
+```
+
+Note: Don't forget to adjust the sample XY data in the example with your actual data.
+
+### License
+
+This function is provided under the MIT License. Feel free to use, modify, and distribute it according to the terms of the license.
+
+For more information on Savitzky-Golay filtering and the use of the function, please refer to the [documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html) of `scipy.signal.savgol_filter`.
+
+
+
+
+
+
+
+
 ## Contributing
 
 Contributions to Aptare are welcome! If you find any issues or have ideas for improvements, feel free to raise an issue or submit a pull request. Check out the contribution guidelines [link to contribution guidelines] for more information.
