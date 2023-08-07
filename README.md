@@ -74,79 +74,112 @@ So there you have it, partner! Saddle up and use the `fit_trap_model` function t
 3. **Documentation:** For more details on the available functions and their usage, please refer to the documentation [link to documentation].
 
 
-Sure! Here's a small GitHub-style README with instructions on how to use the `savgol_delta_detector` function:
+# Savitzky-Golay and KNN Smooth: A Pirate's Guide
 
-## SavGol Delta Detector
+Ahoy there, landlubbers! If ye find yerself strugglin' with noisy data that be jumpin' and divin' like a kraken, fear not! With the help of the Savitzky-Golay and K-Nearest Neighbors (KNN) smoothing techniques, we shall tame those unruly waves and find the buried treasures hidden within!
 
-The `savgol_delta_detector` is a Python function designed to detect significant changes in a dataset using the Savitzky-Golay filter. It provides a way to identify regions of interest where the data shows significant deviations from its smoothed trend.
+## Installations
 
-### Dependencies
+Before we embark on this voyage, make sure ye have installed the necessary libraries: `numpy` and `matplotlib`. If ye haven't installed 'em yet, run the following command:
 
-This function requires the following Python libraries:
-
-- `numpy`: For numerical computations and array manipulations.
-- `matplotlib`: For data visualization.
-
-### Function Signature
-
-```python
-def savgol_delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1):
-    """
-    Detect significant changes in a dataset using the Savitzky-Golay filter.
-
-    Parameters:
-        x (array-like): Input data's X-axis values.
-        y (array-like): Input data's Y-axis values.
-        window_size (int): The size of the window used for the Savitzky-Golay filter. Default is 11.
-        poly_order (int): The polynomial order used for the Savitzky-Golay filter. Default is 3.
-        threshold (float): Threshold to identify significant changes in the smoothed data. Default is 0.1.
-
-    Returns:
-        smoothed_data (numpy.ndarray): The smoothed Y-axis data.
-        significant_changes (numpy.ndarray): X-axis values of significant changes in the data.
-
-    Note:
-        - The input data (x and y) should be sorted in ascending order of X-axis values.
-        - The X-axis values should be normalized before passing to this function.
-        - The Y-axis values should also be normalized before passing to this function.
-
-    Example:
-        # Sample XY data (replace with your actual data)
-        x_data = np.linspace(0, 10, 100)
-        y_data = np.sin(x_data) + np.random.normal(0, 0.1, size=len(x_data))
-
-        # Detect significant changes
-        smoothed_data, significant_changes = savgol_delta_detector(x_data, y_data)
-
-    """
+```
+pip install numpy matplotlib
 ```
 
+## Savitzky-Golay Smooth
 
-### Example
+Our first mate, Savitzky-Golay, be a powerful smoothing filter that helps us sail through the rough seas of noisy data. It be a polynomial regression-based filter that can smooth yer data and reveal the trends hidd'n beneath.
+
+To use Savitzky-Golay, import the `savitzky_golay` function and pass it yer X and Y data along with the window size and polynomial order:
 
 ```python
-import numpy as np
-import matplotlib.pyplot as plt
-from aptare import savgol_delta_detector
+from aptare import savitzky_golay
 
-# Sample XY data (replace with your actual data)
-x_data = np.linspace(0, 10, 100)
-y_data = np.sin(x_data) + np.random.normal(0, 0.1, size=len(x_data))
+# Sample XY data (replace with yer own data)
+x_data = [0, 1, 2, 3, 4, 5]
+y_data = [0.1, 0.5, 0.2, 0.8, 0.9, 0.4]
+
+# Set the window size and polynomial order
+window_size = 3
+poly_order = 2
+
+# Apply Savitzky-Golay smoothing
+smoothed_data = savitzky_golay(x_data, y_data, window_size, poly_order)
+```
+
+Ah, ye be seein' the magic of Savitzky-Golay in action! The `smoothed_data` will be a beautiful, smoother version of yer original `y_data`. But hold on, there be more!
+
+## K-Nearest Neighbors (KNN) Smooth
+
+Sometimes, the seas be too treacherous, and the Savitzky-Golay may falter. In such cases, we need the aid of our trusty K-Nearest Neighbors (KNN) to navigate the choppy waters.
+
+KNN Smooth be a modified version of the original KNN algorithm. It be like sailors sharing their tales with each other and smoothing out the rough edges. Ye can use the `knn_smooth` function to apply this magic:
+
+```python
+from aptare import knn_smooth
+
+# Sample XY data (replace with yer own data)
+x_data = [0, 1, 2, 3, 4, 5]
+y_data = [0.1, 0.5, 0.2, 0.8, 0.9, 0.4]
+
+# Set the number of nearest neighbors to consider
+k_neighbors = 3
+
+# Apply KNN smoothing
+smoothed_data_knn = knn_smooth(x_data, y_data, k=k_neighbors)
+```
+
+Arrr, KNN Smooth to the rescue! The `smoothed_data_knn` be the KNN-smoothed version of yer original `y_data`, showin' a different perspective on yer data.
+
+## Delta Detector: Unearthin' Significant Changes
+
+Now that ye be familiar with the powers of Savitzky-Golay and KNN Smooth, we be ready to sail towards our treasure—significant changes in the data!
+
+Use the `delta_detector` function to detect the significant changes in yer data:
+
+```python
+from aptare import delta_detector
+
+# Sample XY data (replace with yer own data)
+x_data = [0, 1, 2, 3, 4, 5]
+y_data = [0.1, 0.5, 0.2, 0.8, 0.9, 0.4]
+
+# Set the window size, polynomial order, and threshold for detecting changes
+window_size = 3
+poly_order = 2
+threshold = 0.2
 
 # Detect significant changes
-smoothed_data, significant_changes = savgol_delta_detector(x_data, y_data)
+smoothed_data, significant_changes = delta_detector(x_data, y_data, window_size, poly_order, threshold)
+```
+
+Arrr, behold! The `smoothed_data` be the smoothed version of yer `y_data`, while `significant_changes` be the indices where significant changes be detected. Plot them on a chart to visualize the changes:
+
+```python
+import matplotlib.pyplot as plt
 
 # Plot the original data and the smoothed data with significant changes
-plt.plot(x_data, y_data, label='Original Data', alpha=0.5)
-plt.plot(x_data, smoothed_data, label='Smoothed Data')
-plt.scatter(significant_changes, [y_data[i] for i in significant_changes], color='red', label='Significant Changes')
+plt.plot(x_data, y_data, label='Original Data', marker='o')
+plt.plot(x_data, smoothed_data, label='Smoothed Data', linestyle='dashed')
+plt.scatter(x_data[significant_changes], y_data[significant_changes], color='red', label='Significant Changes', marker='x')
 plt.legend()
 plt.xlabel('X')
 plt.ylabel('Y')
-plt.title('Original Data and Smoothed Data with Significant Changes')
+plt.title('Significant Changes in the Data')
 plt.show()
 ```
 
+Shiver me timbers! Ye now be seein' the significant changes marked in red, revealin' the treasures hidden in the depths of the data!
+
+## A Word of Caution
+
+Beware, matey! When usin' Savitzky-Golay and KNN Smooth, the window size and polynomial order be crucial. A too large window may smooth out important details, and a too small window may leave ye sailin' on choppy waters. Experiment wisely!
+
+## Conclusion
+
+Ye be now equipped with the knowledge to harness the powers of Savitzky-Golay and KNN Smooth, detectin' significant changes like a seasoned pirate of the data seas. Sail forth, me hearty, and may yer data explorations be fruitful and yer code always bug-free!
+
+Fair winds and following seas! Yo ho, yo ho! 🏴‍☠️
 
 ## Contributing
 
