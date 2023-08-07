@@ -139,7 +139,7 @@ def tanh_rise_slope(t, depth, transit_time, input_time):
     """
     return depth * np.tanh((t - input_time) / transit_time)
 
-def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, lead_time, rise_slope_func=linear_rise_slope):
+def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, rise_slope_func=linear_rise_slope):
     """
     Defines a trapezoidal waveform based on the given parameters.
 
@@ -163,7 +163,7 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, le
 
     # Generate the waveform
     for i in range(len(x)):
-        if x[i] < input_time - lead_time:  # Input time range (flat base line)
+        if x[i] < input_time:  # Input time range (flat base line)
             y[i] = base
         elif x[i] < input_time + transit_time:  # Rising edge range
             # Using the specified rise slope function for the rising edge
@@ -180,6 +180,61 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, le
                 y[i] = base + depth + (x[i] - (x.max() - output_time)) * (-depth / output_time)
 
     return y
+
+
+
+def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, rise_slope_func=linear_rise_slope,
+                       input_slope_func=linear_input_slope, output_slope_func=linear_output_slope, lead_time=0.0):
+    """
+    Defines a trapezoidal waveform based on the given parameters.
+
+    Args:
+        x (numpy.ndarray): The x values.
+        base (float): The base line of the waveform.
+        depth (float): The depth or amplitude of the waveform.
+        transit_time (float): The time at maximum depth.
+        input_time (float): The time at which the waveform starts to rise.
+        output_time (float): The time at which the waveform starts to fall.
+        rise_slope_func (function): The function to calculate the rise slope.
+                                    Can be linear_rise_slope, sigmoid_rise_slope, or tanh_rise_slope.
+        input_slope_func (function): The function to calculate the input slope.
+                                     Can be linear_input_slope, sigmoid_input_slope, or tanh_input_slope.
+        output_slope_func (function): The function to calculate the output slope.
+                                      Can be linear_output_slope, sigmoid_output_slope, or tanh_output_slope.
+        lead_time (float): The time before input_time when the slope starts (can be negative).
+
+    Returns:
+        y (numpy.ndarray): The corresponding waveform values.
+    """
+    y = np.zeros_like(x)
+
+    # Calculate the rising slope using the provided function
+    rise_slope = rise_slope_func(x, depth, transit_time, input_time)
+
+    # Calculate input and output slopes
+    input_slope = input_slope_func(x, depth, transit_time, input_time, lead_time)
+    output_slope = output_slope_func(x, depth, transit_time, output_time)
+
+    # Generate the waveform
+    for i in range(len(x)):
+        if x[i] < input_time - lead_time:  # Input time range (flat base line)
+            y[i] = base
+        elif x[i] < input_time:  # Rising edge range
+            # Using the specified rise slope function for the rising edge
+            y[i] = base + rise_slope[i]
+        elif x[i] < x.max() - output_time:  # Flat top range
+            # Waveform stays at maximum depth during the flat top range
+            y[i] = base + depth
+        else:  # Falling edge range
+            # If falling edge is not required to fall, just use the last depth value
+            if not output_time:
+                y[i] = base + depth
+            else:
+                # Using the specified output slope function for the falling edge
+                y[i] = base + depth + output_slope[i]
+
+    return y
+
 
 
 
@@ -300,7 +355,7 @@ def delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1, k=5, metho
 
 
 
-def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False, initial_guess = [0.3,0.1,0.1,0.1], do_MCMC = False):
+def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False, initial_guess = [0.3,0.1,0.1], do_MCMC = False):
 
 
         
@@ -311,7 +366,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
 
     # Define priors for the parameters. This is where you can set your initial guesses and ranges.
     def trap_log_prior(params):
-        base_line, wave_depth, transit_time, input_time, output_time, lead_time = params
+        base_line, wave_depth, transit_time, input_time, output_time = params
 
         # Define uniform priors for each parameter
         if (0 < wave_depth < 1000) and (0 < transit_time < 1000) and (0 < input_time < 1000) and (0 < output_time < 1000):
@@ -345,7 +400,6 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     transit_time = initial_guess[0]
     input_time = initial_guess[1]
     output_time = initial_guess[2]
-    lead_time = initial_guess[3]
 
 
 
@@ -363,11 +417,11 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
 
 
     # Perform curve fitting using scipy.optimize.curve_fit with weights
-    p0 = [base_line, wave_depth, transit_time, input_time, output_time, lead_time]  # Initial guess for parameters
+    p0 = [base_line, wave_depth, transit_time, input_time, output_time]  # Initial guess for parameters
     popt, pcov = curve_fit(trapezoid_waveform_partial, x_data, y_data, p0=p0, sigma=y_error, absolute_sigma=True, maxfev = 9999999)
 
     # Extract the fitted parameters
-    fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time, fitted_lead_time = popt
+    fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = popt
 
 
 
@@ -375,7 +429,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
         
         # Perform MCMC fitting
         nwalkers = 100
-        ndim = 6
+        ndim = 5
         nsteps = 5000
 
         # Initialize the walkers around the initial guess
@@ -389,17 +443,17 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
         burn_in = 1000  # You may need to adjust this value depending on the convergence of the chains
         samples = sampler.get_chain(discard=burn_in, flat=True)
         # Extract the fitted parameters from the samples
-        fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time, fitted_lead_time = np.median(samples, axis=0)
+        fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = np.median(samples, axis=0)
 
 
 
 
     # Generate the fitted waveform using the fitted parameters
-    fitted_waveform = trapezoid_waveform_partial(x_data, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time, fitted_lead_time)
+    fitted_waveform = trapezoid_waveform_partial(x_data, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
 
     # Generate the fitted waveform using the fitted parameters
     plt_x_fitted = np.linspace(0, 1, 1000)  # Higher sampling rate for visualization
-    plt_fitted_waveform = trapezoid_waveform_partial(plt_x_fitted, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time, fitted_lead_time)
+    plt_fitted_waveform = trapezoid_waveform_partial(plt_x_fitted, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
 
 
 
