@@ -183,61 +183,6 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, ri
 
 
 
-def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, rise_slope_func=linear_rise_slope,
-                       input_slope_func=linear_input_slope, output_slope_func=linear_output_slope, lead_time=0.0):
-    """
-    Defines a trapezoidal waveform based on the given parameters.
-
-    Args:
-        x (numpy.ndarray): The x values.
-        base (float): The base line of the waveform.
-        depth (float): The depth or amplitude of the waveform.
-        transit_time (float): The time at maximum depth.
-        input_time (float): The time at which the waveform starts to rise.
-        output_time (float): The time at which the waveform starts to fall.
-        rise_slope_func (function): The function to calculate the rise slope.
-                                    Can be linear_rise_slope, sigmoid_rise_slope, or tanh_rise_slope.
-        input_slope_func (function): The function to calculate the input slope.
-                                     Can be linear_input_slope, sigmoid_input_slope, or tanh_input_slope.
-        output_slope_func (function): The function to calculate the output slope.
-                                      Can be linear_output_slope, sigmoid_output_slope, or tanh_output_slope.
-        lead_time (float): The time before input_time when the slope starts (can be negative).
-
-    Returns:
-        y (numpy.ndarray): The corresponding waveform values.
-    """
-    y = np.zeros_like(x)
-
-    # Calculate the rising slope using the provided function
-    rise_slope = rise_slope_func(x, depth, transit_time, input_time)
-
-    # Calculate input and output slopes
-    input_slope = input_slope_func(x, depth, transit_time, input_time, lead_time)
-    output_slope = output_slope_func(x, depth, transit_time, output_time)
-
-    # Generate the waveform
-    for i in range(len(x)):
-        if x[i] < input_time - lead_time:  # Input time range (flat base line)
-            y[i] = base
-        elif x[i] < input_time:  # Rising edge range
-            # Using the specified rise slope function for the rising edge
-            y[i] = base + rise_slope[i]
-        elif x[i] < x.max() - output_time:  # Flat top range
-            # Waveform stays at maximum depth during the flat top range
-            y[i] = base + depth
-        else:  # Falling edge range
-            # If falling edge is not required to fall, just use the last depth value
-            if not output_time:
-                y[i] = base + depth
-            else:
-                # Using the specified output slope function for the falling edge
-                y[i] = base + depth + output_slope[i]
-
-    return y
-
-
-
-
 
 
 def savitzky_golay(x, y, window_size, order, deriv=0, rate=1):
