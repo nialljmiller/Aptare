@@ -139,7 +139,7 @@ def tanh_rise_slope(t, depth, transit_time, input_time):
     """
     return depth * np.tanh((t - input_time) / transit_time)
 
-def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, rise_slope_func=linear_rise_slope):
+def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, lead_time, rise_slope_func=linear_rise_slope):
     """
     Defines a trapezoidal waveform based on the given parameters.
 
@@ -163,7 +163,7 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, ri
 
     # Generate the waveform
     for i in range(len(x)):
-        if x[i] < input_time:  # Input time range (flat base line)
+        if x[i] < input_time - lead_time:  # Input time range (flat base line)
             y[i] = base
         elif x[i] < input_time + transit_time:  # Rising edge range
             # Using the specified rise slope function for the rising edge
@@ -180,6 +180,8 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, ri
                 y[i] = base + depth + (x[i] - (x.max() - output_time)) * (-depth / output_time)
 
     return y
+
+
 
 
 
@@ -298,7 +300,7 @@ def delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1, k=5, metho
 
 
 
-def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False, initial_guess = [0.3,0.1,0.1], do_MCMC = False):
+def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False, initial_guess = [0.3,0.1,0.1,0.1], do_MCMC = False):
 
 
         
@@ -343,6 +345,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     transit_time = initial_guess[0]
     input_time = initial_guess[1]
     output_time = initial_guess[2]
+    lead_time = initial_guess[3]
 
 
 
@@ -360,11 +363,11 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
 
 
     # Perform curve fitting using scipy.optimize.curve_fit with weights
-    p0 = [base_line, wave_depth, transit_time, input_time, output_time]  # Initial guess for parameters
+    p0 = [base_line, wave_depth, transit_time, input_time, output_time, lead_time]  # Initial guess for parameters
     popt, pcov = curve_fit(trapezoid_waveform_partial, x_data, y_data, p0=p0, sigma=y_error, absolute_sigma=True, maxfev = 9999999)
 
     # Extract the fitted parameters
-    fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = popt
+    fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time, fitted_lead_time = popt
 
 
 
@@ -386,17 +389,17 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
         burn_in = 1000  # You may need to adjust this value depending on the convergence of the chains
         samples = sampler.get_chain(discard=burn_in, flat=True)
         # Extract the fitted parameters from the samples
-        fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = np.median(samples, axis=0)
+        fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time, fitted_lead_time = np.median(samples, axis=0)
 
 
 
 
     # Generate the fitted waveform using the fitted parameters
-    fitted_waveform = trapezoid_waveform(x_data, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
+    fitted_waveform = trapezoid_waveform_partial(x_data, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time, fitted_lead_time)
 
     # Generate the fitted waveform using the fitted parameters
     plt_x_fitted = np.linspace(0, 1, 1000)  # Higher sampling rate for visualization
-    plt_fitted_waveform = trapezoid_waveform_partial(plt_x_fitted, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
+    plt_fitted_waveform = trapezoid_waveform_partial(plt_x_fitted, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time, fitted_lead_time)
 
 
 
