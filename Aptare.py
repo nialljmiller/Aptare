@@ -311,7 +311,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
 
     # Define priors for the parameters. This is where you can set your initial guesses and ranges.
     def trap_log_prior(params):
-        base_line, wave_depth, transit_time, input_time, output_time = params
+        base_line, wave_depth, transit_time, input_time, output_time, lead_time = params
 
         # Define uniform priors for each parameter
         if (0 < wave_depth < 1000) and (0 < transit_time < 1000) and (0 < input_time < 1000) and (0 < output_time < 1000):
@@ -375,7 +375,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
         
         # Perform MCMC fitting
         nwalkers = 100
-        ndim = 5
+        ndim = 6
         nsteps = 5000
 
         # Initialize the walkers around the initial guess
