@@ -182,19 +182,81 @@ def trapezoid_waveform(x, base, depth, transit_time, input_time, output_time, ri
     return y
 
 
-def savitzky_golay(y, window_size, order, deriv=0, rate=1):
+
+def savitzky_golay(x, y, window_size, order, deriv=0, rate=1):
+    """
+    Apply Savitzky-Golay filter on the data.
+
+    Parameters:
+        x (array-like): Input data's X-axis values.
+        y (array-like): Input data's Y-axis values.
+        window_size (int): The size of the window used for the Savitzky-Golay filter.
+        order (int): The polynomial order used for the Savitzky-Golay filter.
+        deriv (int): The order of derivative. Default is 0 (no derivative).
+        rate (int): The sampling rate of the data. Default is 1.
+
+    Returns:
+        smoothed_data (numpy.ndarray): The smoothed Y-axis data.
+
+    Note:
+        - The input data (x and y) should be sorted in ascending order of X-axis values.
+        - The X-axis values should be normalized before passing to this function.
+        - The Y-axis values should also be normalized before passing to this function.
+    """
     half_window = (window_size - 1) // 2
-    order_range = range(order+1)
+    order_range = range(order + 1)
     coeffs = [(-1)**k * np.math.factorial(order) // (np.math.factorial(k) * np.math.factorial(order - k)) for k in order_range]
     kernel = np.outer(coeffs, np.ones(window_size))
-    smoothed = np.convolve(y, kernel[deriv], mode='same')
+
+    # Interpolate the data to a regular grid
+    x_regular = np.linspace(x[0], x[-1], len(x))
+    y_regular = np.interp(x_regular, x, y)
+
+    smoothed = np.convolve(y_regular, kernel[deriv], mode='same')
     smoothed /= rate**deriv
+
+    # Interpolate the smoothed data back to the original X-axis values
+    smoothed_at_original_x = np.interp(x, x_regular, smoothed)
+
+    return smoothed_at_original_x
+
+
+def knn_smooth(x, y, k=5):
+    """
+    Apply modified K-Nearest Neighbors smoothing on the data with stochastic sampling.
+
+    Parameters:
+        x (array-like): Input data's X-axis values.
+        y (array-like): Input data's Y-axis values.
+        k (int): The number of nearest neighbors to consider for smoothing. Default is 5.
+
+    Returns:
+        smoothed_data (numpy.ndarray): The smoothed Y-axis data.
+
+    Note:
+        - The input data (x and y) should be sorted in ascending order of X-axis values.
+        - The X-axis values should be normalized before passing to this function.
+        - The Y-axis values should also be normalized before passing to this function.
+    """
+    smoothed = np.zeros_like(y)
+
+    for i, y_val in enumerate(y):
+        distances = np.abs(x - x[i])
+        sorted_indices = np.argsort(distances)
+        neighbors = y[sorted_indices[1:k+1]]  # Exclude the point itself
+
+        # Compute weights based on distance from the target point
+        weights = 1.0 / (1.0 + distances[sorted_indices[1:k+1]])
+
+        # Calculate weighted average of neighbors
+        smoothed[i] = np.sum(weights * neighbors) / np.sum(weights)
+
     return smoothed
 
 
-def savgol_delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1):
+def delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1, k=5, method='sav_gol'):
     """
-    Detect significant changes in a dataset using the Savitzky-Golay filter.
+    Detect significant changes in a dataset using a filter.
 
     Parameters:
         x (array-like): Input data's X-axis values.
@@ -202,6 +264,8 @@ def savgol_delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1):
         window_size (int): The size of the window used for the Savitzky-Golay filter. Default is 11.
         poly_order (int): The polynomial order used for the Savitzky-Golay filter. Default is 3.
         threshold (float): Threshold to identify significant changes in the smoothed data. Default is 0.1.
+        k (int): The number of nearest neighbors to consider for KNN smoothing. Default is 5.
+        method (str): Smoothing method ('sav_gol' or 'knn'). Default is 'sav_gol'.
 
     Returns:
         smoothed_data (numpy.ndarray): The smoothed Y-axis data.
@@ -211,30 +275,21 @@ def savgol_delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1):
         - The input data (x and y) should be sorted in ascending order of X-axis values.
         - The X-axis values should be normalized before passing to this function.
         - The Y-axis values should also be normalized before passing to this function.
-
-    Example:
-        # Sample XY data (replace with your actual data)
-        x_data = np.linspace(0, 10, 100)
-        y_data = np.sin(x_data) + np.random.normal(0, 0.1, size=len(x_data))
-
-        # Detect significant changes
-        smoothed_data, significant_changes = savgol_delta_detector(x_data, y_data)
-
     """
-
-    #x_sort = np.argsort(x)
-    #x = x[x_sort]
-    #y = y[x_sort]
+    x_sort = np.argsort(x)
+    x = x[x_sort]
+    y = y[x_sort]
 
     x_data = min_max_norm(x)
     y_data = min_max_norm(y)
-    y_data_smoothed = savitzky_golay(y_data, window_size, poly_order)
+    
+    if method.lower() in ['knn', 'k-nearest neighbors']:
+        y_data_smoothed = knn_smooth(x_data, y_data, k=k)
+    else:
+        y_data_smoothed = savitzky_golay(x_data, y_data, window_size, poly_order)
 
     significant_changes = np.where(np.abs(np.gradient(y_data_smoothed)) > threshold)[0]
     return y_data_smoothed, x[significant_changes]
-
-
-
 
 
 
@@ -341,7 +396,7 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
 
     # Generate the fitted waveform using the fitted parameters
     plt_x_fitted = np.linspace(0, 1, 1000)  # Higher sampling rate for visualization
-    plt_fitted_waveform = trapezoid_waveform(plt_x_fitted, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
+    plt_fitted_waveform = trapezoid_waveform_partial(plt_x_fitted, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
 
 
 
