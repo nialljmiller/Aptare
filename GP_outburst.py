@@ -12,6 +12,17 @@ def log_likelihood(params, t, y):
     gp.compute(t)
     return -0.5 * np.sum((y - model.get_value(t)) ** 2 / gp.get_variance(y))
 
+def log_likelihood_err(params, t, y, y_err):
+    model.set_parameter_vector(params)
+    gp.compute(t)
+    y_pred = model.get_value(t)
+    resid = y - y_pred
+    log_like = -0.5 * np.sum((resid / y_err)**2 + np.log(2 * np.pi * y_err**2))
+    return log_like
+
+
+
+
 # Define the log prior for emcee
 def log_prior(params):
     # Define appropriate prior distributions for each parameter
@@ -53,7 +64,7 @@ class CompositeModel(Model):
 
 
 
-def GP_trapfit(X,y, make_plots = False, output_fp = None):
+def GP_trapfit(X,y,yerr = None make_plots = False, output_fp = None):
 
 
     def plotter(output_fp = None):
@@ -90,10 +101,17 @@ def GP_trapfit(X,y, make_plots = False, output_fp = None):
     # Initial parameter guesses
     initial_params = model.get_parameter_vector()
 
+
+
+
+
     # Set up the emcee sampler
     nwalkers = 32
     ndim = len(initial_params)
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(X, y))
+    if yerr == None
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(X, y))
+    else:
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_err, args=(X, y, y_err))
 
     # Burn-in phase
     pos, _, _ = sampler.run_mcmc(np.random.randn(nwalkers, ndim) * 1e-3 + initial_params, 1000)
