@@ -58,7 +58,7 @@ def GP_trapfit(X,y, make_plots = False, output_fp = None):
 
     def plotter(output_fp = None):
         # Plotting the posterior distributions of parameters
-        if output_fp nis not None: 
+        if output_fp is not None: 
             labels = ["slope_linear", "length_scale_rbf", "amplitude_rq", "length_scale_rq", "alpha_rq", "amplitude_exp", "length_scale_exp", "period_exp"]
             corner.corner(samples, labels=labels, truths=initial_params)
             plt.savefig(output_fp)
