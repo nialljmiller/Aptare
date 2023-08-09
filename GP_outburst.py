@@ -62,8 +62,11 @@ class CompositeKernel(celerite.terms.Term):
         return kernel_value
 
 
-def GP_trapfit(X,y,yerr = None, make_plots = False, output_fp = None):
 
+
+
+
+def GP_trapfit(X,y,yerr = None, make_plots = False, output_fp = None):
 
     def plotter(output_fp = None):
         # Plotting the posterior distributions of parameters
