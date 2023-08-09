@@ -64,7 +64,7 @@ class CompositeModel(Model):
 
 
 
-def GP_trapfit(X,y,yerr = None make_plots = False, output_fp = None):
+def GP_trapfit(X,y,yerr = None, make_plots = False, output_fp = None):
 
 
     def plotter(output_fp = None):
@@ -108,7 +108,7 @@ def GP_trapfit(X,y,yerr = None make_plots = False, output_fp = None):
     # Set up the emcee sampler
     nwalkers = 32
     ndim = len(initial_params)
-    if yerr == None
+    if yerr == None:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, args=(X, y))
     else:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability_err, args=(X, y, y_err))
