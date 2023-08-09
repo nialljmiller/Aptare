@@ -37,13 +37,14 @@ def log_probability(params, t, y):
 
 
 
-
-# Define a custom model class for your composite kernel
-class CompositeModel(Model):
+# Define a custom kernel for your composite kernel
+class CompositeKernel(celerite.terms.Term):
     parameter_names = ("slope_linear", "length_scale_rbf", "amplitude_rq", "length_scale_rq", "alpha_rq", "amplitude_exp", "length_scale_exp", "period_exp")
 
-    def get_value(self, t):
-        # Interpret parameters
+    def get_real_coefficients(self):
+        return np.array([0.0])
+
+    def get_complex_coefficients(self):
         slope_linear = self.slope_linear
         length_scale_rbf = self.length_scale_rbf
         amplitude_rq = self.amplitude_rq
@@ -53,15 +54,12 @@ class CompositeModel(Model):
         length_scale_exp = self.length_scale_exp
         period_exp = self.period_exp
 
-        # Calculate the composite kernel value
-        k_linear = slope_linear * t
-        k_rbf = amplitude_rq**2 * np.exp(-0.5 * (t / length_scale_rbf)**2)
-        k_rq = amplitude_rq**2 * (1 + (t**2 / (2 * alpha_rq * length_scale_rq**2)))**(-alpha_rq)
-        k_exp = amplitude_exp**2 * np.exp(-0.5 * (t / length_scale_exp)**2) * np.cos(2 * np.pi * t / period_exp)
+        kernel_value = slope_linear * celerite.terms.RealTerm(1.0, 0.0) + \
+                       amplitude_rq * celerite.terms.Matern32Term(length_scale=length_scale_rbf) + \
+                       amplitude_rq * celerite.terms.Matern52Term(length_scale=length_scale_rq) + \
+                       amplitude_exp * celerite.terms.ExpSine2Term(length_scale=length_scale_exp, period=period_exp)
 
-        return k_linear + k_rbf + k_rq + k_exp
-
-
+        return kernel_value
 
 
 def GP_trapfit(X,y,yerr = None, make_plots = False, output_fp = None):
@@ -91,12 +89,14 @@ def GP_trapfit(X,y,yerr = None, make_plots = False, output_fp = None):
 
 
 
-    # Initialize the custom model
-    model = CompositeModel(slope_linear=0.1, length_scale_rbf=0.5, amplitude_rq=0.5, length_scale_rq=0.5, alpha_rq=1.5, amplitude_exp=0.5, length_scale_exp=1.0, period_exp=1.0)
+
+    # Initialize the custom kernel
+    kernel = CompositeKernel()
 
     # Set up the celerite GP
-    gp = celerite.GP(model, fit_mean=False)
+    gp = celerite.GP(kernel, fit_mean=False)
     gp.compute(X)
+
 
     # Initial parameter guesses
     initial_params = model.get_parameter_vector()
