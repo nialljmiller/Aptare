@@ -256,9 +256,10 @@ def knn_smooth(x, y, k=5, output_length=None):
         weights = 1.0 / (1.0 + distances[sorted_indices[:k]])
 
         # Calculate weighted average of neighbors
-        smoothed[i] = np.sum(weights * neighbors) / np.sum(weights)
+        smoothed_x[i] = target_x
+        smoothed_y[i] = np.sum(weights * neighbors) / np.sum(weights)
 
-    return smoothed
+    return smoothed_x, smoothed_y
 
 
 def delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1, k=5, method='sav_gol'):
