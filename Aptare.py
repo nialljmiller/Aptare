@@ -223,7 +223,7 @@ def savitzky_golay(x, y, window_size, order, deriv=0, rate=1):
     return smoothed_at_original_x
 
 
-def knn_smooth(x, y, k=5):
+def knn_smooth(x, y, k=5, output_length=None):
     """
     Apply modified K-Nearest Neighbors smoothing on the data with stochastic sampling.
 
@@ -231,6 +231,7 @@ def knn_smooth(x, y, k=5):
         x (array-like): Input data's X-axis values.
         y (array-like): Input data's Y-axis values.
         k (int): The number of nearest neighbors to consider for smoothing. Default is 5.
+        output_length (int): Length of the output smoothed data. If None, uses the length of input data.
 
     Returns:
         smoothed_data (numpy.ndarray): The smoothed Y-axis data.
@@ -240,15 +241,19 @@ def knn_smooth(x, y, k=5):
         - The X-axis values should be normalized before passing to this function.
         - The Y-axis values should also be normalized before passing to this function.
     """
-    smoothed = np.zeros_like(y)
+    if output_length is None:
+        output_length = len(x)
 
-    for i, y_val in enumerate(y):
-        distances = np.abs(x - x[i])
+    smoothed = np.zeros(output_length)
+
+    for i in range(output_length):
+        target_x = (i / (output_length - 1)) * (x[-1] - x[0]) + x[0]  # Interpolate target x value
+        distances = np.abs(x - target_x)
         sorted_indices = np.argsort(distances)
-        neighbors = y[sorted_indices[1:k+1]]  # Exclude the point itself
+        neighbors = y[sorted_indices[:k]]
 
         # Compute weights based on distance from the target point
-        weights = 1.0 / (1.0 + distances[sorted_indices[1:k+1]])
+        weights = 1.0 / (1.0 + distances[sorted_indices[:k]])
 
         # Calculate weighted average of neighbors
         smoothed[i] = np.sum(weights * neighbors) / np.sum(weights)
