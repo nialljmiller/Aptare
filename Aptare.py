@@ -244,7 +244,8 @@ def knn_smooth(x, y, k=5, output_length=None):
     if output_length is None:
         output_length = len(x)
 
-    smoothed = np.zeros(output_length)
+    smoothed_x = np.zeros(output_length)
+    smoothed_y = np.zeros(output_length)
 
     for i in range(output_length):
         target_x = (i / (output_length - 1)) * (x[-1] - x[0]) + x[0]  # Interpolate target x value
