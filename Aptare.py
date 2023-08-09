@@ -5,7 +5,7 @@ import emcee
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from functools import partial
-
+import GP_outburst
 #       _ _   _           _                                        _                                 _                       
 #      (_) | | |         | |                                      | |                               (_)                      
 #  __ _ _| |_| |__  _   _| |__     ___ __ _ _ __    ___ _   _  ___| | __  _ __ ___  _   _  __      ___ _ __   __ _ _   _ ___ 
@@ -300,7 +300,8 @@ def delta_detector(x, y, window_size=11, poly_order=3, threshold=0.1, k=5, metho
 
 
 
-
+def gp_traps(x,y,make_plots = False, output_fp = None):
+	GP_outburst.GP_trapfit(x,y, make_plots, output_fp)
 
 
 
