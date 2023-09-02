@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+Aptare.egg-info/PKG-INFO
+Aptare.egg-info/SOURCES.txt
+Aptare.egg-info/dependency_links.txt
+Aptare.egg-info/requires.txt
+Aptare.egg-info/top_level.txt

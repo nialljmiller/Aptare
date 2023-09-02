@@ -315,9 +315,7 @@ def classic_traps(x,y,make_plots = False, output_fp = None):
 
 
 def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = None, norm_x = False, norm_y = False, initial_guess = [0.3,0.1,0.1], do_MCMC = False):
-
-
-        
+       
     # Define the log likelihood function for the MCMC fitting
     def trap_log_likelihood(params, x, y, y_err):
         model = trapezoid_waveform_partial(x, *params)
@@ -374,15 +372,12 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     # Create a partial function with fixed arguments (rise_slope_func)
     trapezoid_waveform_partial = partial(trapezoid_waveform, rise_slope_func=rise_slope_func)
 
-
     # Perform curve fitting using scipy.optimize.curve_fit with weights
     p0 = [base_line, wave_depth, transit_time, input_time, output_time]  # Initial guess for parameters
     popt, pcov = curve_fit(trapezoid_waveform_partial, x_data, y_data, p0=p0, sigma=y_error, absolute_sigma=True, maxfev = 9999999)
 
     # Extract the fitted parameters
     fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = popt
-
-
 
     if do_MCMC: 
         
@@ -403,24 +398,13 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
         samples = sampler.get_chain(discard=burn_in, flat=True)
         # Extract the fitted parameters from the samples
         fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time = np.median(samples, axis=0)
-
-
-
-
+  
     # Generate the fitted waveform using the fitted parameters
     fitted_waveform = trapezoid_waveform_partial(x_data, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
 
     # Generate the fitted waveform using the fitted parameters
     plt_x_fitted = np.linspace(0, 1, 1000)  # Higher sampling rate for visualization
     plt_fitted_waveform = trapezoid_waveform_partial(plt_x_fitted, fitted_base, fitted_depth, fitted_transit_time, fitted_input_time, fitted_output_time)
-
-
-
-
-
-
-
-
 
 
     rmse = calculate_rmse(y_data, fitted_waveform)
