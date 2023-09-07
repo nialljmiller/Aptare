@@ -515,24 +515,24 @@ def fit_FUor_model(phase, mag, mag_error, output_fp=None, norm_x=False, norm_y=F
 
         # Define the log likelihood function for MCMC
         def ln_likelihood(theta, x, y, y_err):
-        peak, tau, t_half, base_mag, decay_mag = theta
-        model = phil_rise_slope_norm(x, peak, tau, t_half, base_mag, decay_mag)
-        chi2 = np.sum(((y - model) / y_err) ** 2)
-        return -0.5 * chi2
+            peak, tau, t_half, base_mag, decay_mag = theta
+            model = phil_rise_slope_norm(x, peak, tau, t_half, base_mag, decay_mag)
+            chi2 = np.sum(((y - model) / y_err) ** 2)
+            return -0.5 * chi2
 
         # Define the log prior function (uniform priors in this example)
         def ln_prior(theta):
-        peak, tau, t_half, base_mag, decay_mag = theta
-        if 0.0 < peak < 10.0 and 0.0 < tau < 10.0 and 0.0 < t_half < 10.0 and 0.0 < base_mag < 10.0 and 0.0 < decay_mag < 10.0:
-            return 0.0
-        return -np.inf
+            peak, tau, t_half, base_mag, decay_mag = theta
+            if 0.0 < peak < 10.0 and 0.0 < tau < 10.0 and 0.0 < t_half < 10.0 and 0.0 < base_mag < 10.0 and 0.0 < decay_mag < 10.0:
+                return 0.0
+            return -np.inf
 
         # Define the log probability function
         def ln_probability(theta, x, y, y_err):
-        lp = ln_prior(theta)
-        if not np.isfinite(lp):
-            return -np.inf
-        return lp + ln_likelihood(theta, x, y, y_err)
+            lp = ln_prior(theta)
+            if not np.isfinite(lp):
+                return -np.inf
+            return lp + ln_likelihood(theta, x, y, y_err)
 
         # Perform MCMC fitting
         nwalkers = 100
