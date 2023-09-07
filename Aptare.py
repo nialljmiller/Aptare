@@ -451,6 +451,155 @@ def fit_trap_model(phase, mag, mag_error, rise_slope = 'Linear', output_fp = Non
     
     
 
+def phil_rise_slope_norm(time, peak, tau, t_half, base_mag, decay_mag):
+    """
+    Calculates the FUor-iness of a light curve using an exponential function and linear decay.
+
+    Args:
+        time (array): Array of dates or times.
+        peak (float): The depth or amplitude of the waveform.
+        tau (float): 1/2 of the time the burst ends.
+        t_half (float): Time at halfway point of eruptive event.
+        base_mag (float): Quiescent magnitude.
+        decay_mag (float): Final magnitude.
+
+    Returns:
+        list: List of calculated values for the light curve.
+    """
+    line = []
+    decay_time = time.max() - (t_half + 2 * tau)
+    grad = (decay_mag - peak) / decay_time
+
+    for t in time:
+        if t < t_half:
+            line.append(base_mag + ((base_mag + peak) / (1 + np.exp(-1 * (t - t_half) / tau))))
+        elif t <= (t_half + 2 * tau):
+            line.append(base_mag + ((base_mag + peak) * (0.5 + 0.5 * ((t - t_half) / (2 * tau)))))
+        else:
+            line.append((grad * (time.max() - t)) + decay_mag)
+
+    return line
+
+
+
+
+
+def fit_FUor_model(phase, mag, mag_error, output_fp=None, norm_x=False, norm_y=False, initial_guess=[0.1, 0.3], do_MCMC=False):
+
+    # Sort the data
+    x_sort = np.argsort(phase)
+    x_data = phase[x_sort]
+    y_data = mag[x_sort]
+    y_error = mag_error[x_sort]
+
+    # Normalize data if requested
+    if norm_x:
+        x_data = min_max_norm(x_data)
+    if norm_y:
+        y_error = y_error / y_data
+        y_data = min_max_norm(y_data)
+
+    # Example usage with curve fitting
+    Q1, Q5, Q25, Q99 = np.percentile(y_data, [1, 5, 50, 99])
+    base_mag = Q5
+    peak = abs(Q99 - Q1)
+    tau = initial_guess[0]
+    t_half = initial_guess[1]
+    decay_mag = y_data[-1]
+
+    p0 = [peak, tau, t_half, base_mag, decay_mag]  # Initial guess for parameters
+    popt, pcov = curve_fit(phil_rise_slope_norm, x_data, y_data, p0=p0, sigma=y_error, absolute_sigma=True, maxfev=9999999)
+    fitted_peak, fitted_tau, fitted_t_half, fitted_base_mag, fitted_decay_mag = popt
+
+    if do_MCMC:
+
+        # Define the log likelihood function for MCMC
+        def ln_likelihood(theta, x, y, y_err):
+        peak, tau, t_half, base_mag, decay_mag = theta
+        model = phil_rise_slope_norm(x, peak, tau, t_half, base_mag, decay_mag)
+        chi2 = np.sum(((y - model) / y_err) ** 2)
+        return -0.5 * chi2
+
+        # Define the log prior function (uniform priors in this example)
+        def ln_prior(theta):
+        peak, tau, t_half, base_mag, decay_mag = theta
+        if 0.0 < peak < 10.0 and 0.0 < tau < 10.0 and 0.0 < t_half < 10.0 and 0.0 < base_mag < 10.0 and 0.0 < decay_mag < 10.0:
+            return 0.0
+        return -np.inf
+
+        # Define the log probability function
+        def ln_probability(theta, x, y, y_err):
+        lp = ln_prior(theta)
+        if not np.isfinite(lp):
+            return -np.inf
+        return lp + ln_likelihood(theta, x, y, y_err)
+
+        # Perform MCMC fitting
+        nwalkers = 100
+        ndim = len(p0)
+        nsteps = 5000
+
+        # Initialize the walkers around the initial guess
+        initial_guess = popt
+        pos = initial_guess + 1e-4 * np.random.randn(nwalkers, ndim)
+
+        # Set up the emcee sampler
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_probability, args=(x_data, y_data, y_error))
+
+        # Run the MCMC sampler
+        sampler.run_mcmc(pos, nsteps, progress=True)
+
+        # Extract the fitted parameters from the samples
+        burn_in = 1000  # You may need to adjust this value depending on the convergence of the chains
+        samples = sampler.get_chain(discard=burn_in, flat=True)
+
+        # Extract the fitted parameters from the samples
+        fitted_peak, fitted_tau, fitted_t_half, fitted_base_mag, fitted_decay_mag = np.median(samples, axis=0)
+
+    fitted_waveform = phil_rise_slope_norm(x_data, fitted_peak, fitted_tau, fitted_t_half, fitted_base_mag, fitted_decay_mag)           
+
+    # Generate the fitted waveform using the fitted parameters
+    plt_x_fitted = np.linspace(0, 1, 1000)  # Higher sampling rate for visualization
+    plt_fitted_waveform = phil_rise_slope_norm(plt_x_fitted, fitted_peak, fitted_tau, fitted_t_half, fitted_base_mag, fitted_decay_mag)
+
+    # Calculate RMSE and weighted RMSE
+    rmse = np.sqrt(np.mean((y_data - fitted_waveform)**2))
+    weighted_rmse = np.sqrt(np.mean(((y_data - fitted_waveform) / y_error)**2))
+
+    if output_fp is not None:
+        # Plotting the original data, the noisy data, and the fitted waveform
+        fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(8, 6))
+
+        # Top panel - Original data and fitted waveform
+        ax1.errorbar(x_data, y_data, yerr=y_error, fmt='.', alpha=0.7, label='Observed Data', c='k')
+        ax1.plot(plt_x_fitted, plt_fitted_waveform, label='Fitted Trapezoid', c='g')
+        ax1.errorbar(x_data + 1, y_data, yerr=y_error, fmt='.', alpha=0.7, c='black')
+        ax1.plot(plt_x_fitted + 1, plt_fitted_waveform, c='green')
+        ax1.set_ylabel('Mag')
+        ax1.legend()
+        ax1.grid(True)
+
+        # Bottom panel - Residuals
+        residuals = y_data - fitted_waveform
+        ax2.plot(x_data, residuals, '.', alpha=0.7, c='blue')
+        ax2.plot(x_data + 1, residuals, '.', alpha=0.7, c='blue')
+        ax2.axhline(0, color='black', linestyle='--')
+        ax2.set_xlabel('Phase')
+        ax2.set_ylabel('Residuals')
+        ax2.grid(True)
+
+        # Set the x-axis label only on the bottom plot
+        plt.xlabel('Phase')
+
+        # Set the title with RMSE and weighted RMSE
+        plt.suptitle('Trapezoid Fit\nRMSE: {:.4f} - Weighted RMSE: {:.4f}'.format(rmse, weighted_rmse))
+
+        # Adjust the spacing between subplots
+        plt.tight_layout()
+        plt.savefig(output_fp, dpi=300)
+
+    return rmse, weighted_rmse, fitted_peak, fitted_tau, fitted_t_half, fitted_base_mag, fitted_decay_mag
+
 
 def calculate_boxiness(phase, mag, mag_err):
     # Normalize phase to range [0, 1]
